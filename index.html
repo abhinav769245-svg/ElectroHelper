@@ -1,0 +1,1322 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ElectroCraft - Interactive Electronics Project Hub</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#ecfdf5',
+                            100: '#d1fae5',
+                            400: '#34d399',
+                            500: '#10b981',
+                            600: '#059669',
+                            700: '#047857',
+                            cyan: '#06b6d4',
+                            amber: '#f59e0b',
+                            dark: '#0b1329',
+                            card: '#1e293b'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['Fira Code', 'Consolas', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Custom Scrollbar & Utility Styles -->
+    <style>
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #10b981;
+        }
+        .glow-cyan {
+            box-shadow: 0 0 15px rgba(6, 182, 212, 0.25);
+        }
+        .glow-emerald {
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.25);
+        }
+        .circuit-bg {
+            background-color: #0b132b;
+            background-image: radial-gradient(#1e293b 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans min-h-screen flex flex-col circuit-bg selection:bg-emerald-500 selection:text-slate-950">
+
+    <!-- Header Navigation -->
+    <header class="sticky top-0 z-40 bg-slate-900/90 backdrop-blur-md border-b border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <!-- Logo -->
+            <div class="flex items-center space-x-3 cursor-pointer" onclick="switchTab('catalog')">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-cyan-500 flex items-center justify-center text-slate-950 font-bold text-xl shadow-lg shadow-emerald-500/20">
+                    <i data-lucide="cpu" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <span class="text-xl font-bold bg-gradient-to-r from-emerald-400 via-cyan-400 to-blue-500 bg-clip-text text-transparent">ElectroCraft</span>
+                    <span class="hidden sm:inline-block text-xs font-mono px-2 py-0.5 ml-2 bg-emerald-950 text-emerald-400 border border-emerald-800/60 rounded-full">v2.5 Pro</span>
+                </div>
+            </div>
+
+            <!-- Navigation Tabs -->
+            <nav class="flex items-center space-x-1 sm:space-x-2">
+                <button id="nav-catalog" onclick="switchTab('catalog')" class="px-3 py-2 rounded-lg text-sm font-medium transition flex items-center space-x-2 bg-slate-800 text-emerald-400 border border-emerald-500/30">
+                    <i data-lucide="compass" class="w-4 h-4"></i>
+                    <span class="hidden md:inline">Project Library</span>
+                </button>
+                <button id="nav-sandbox" onclick="switchTab('sandbox')" class="px-3 py-2 rounded-lg text-sm font-medium transition flex items-center space-x-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800">
+                    <i data-lucide="wrench" class="w-4 h-4"></i>
+                    <span class="hidden md:inline">Circuit Sandbox</span>
+                </button>
+                <button id="nav-ai" onclick="switchTab('ai-generator')" class="px-3 py-2 rounded-lg text-sm font-medium transition flex items-center space-x-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800">
+                    <i data-lucide="sparkles" class="w-4 h-4 text-cyan-400"></i>
+                    <span>Code Modifier</span>
+                </button>
+            </nav>
+
+            <!-- Quick Action / Status -->
+            <div class="flex items-center space-x-3">
+                <!-- API Key Config Button -->
+                <button onclick="toggleApiKeyModal()" id="btn-api-key-status" class="px-2.5 py-1.5 rounded-lg bg-slate-800 text-slate-300 hover:text-cyan-400 text-xs font-mono border border-slate-700 flex items-center space-x-1.5 transition">
+                    <i data-lucide="key" class="w-3.5 h-3.5 text-cyan-400"></i>
+                    <span id="api-key-label" class="hidden sm:inline">API Key: Demo</span>
+                </button>
+
+                <!-- Auth State Button / Profile -->
+                <div id="auth-nav-container">
+                    <button onclick="toggleAuthModal('login')" id="btn-open-auth" class="px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs transition flex items-center space-x-1.5 shadow-md shadow-emerald-500/20">
+                        <i data-lucide="user" class="w-4 h-4"></i>
+                        <span>Log In / Sign Up</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Modal: Authentication (Log In / Sign Up) -->
+    <div id="modal-auth" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 space-y-5 relative shadow-2xl">
+            <button onclick="toggleAuthModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white">&times;</button>
+            
+            <div class="flex items-center space-x-2 border-b border-slate-800 pb-3">
+                <button id="auth-tab-login" onclick="switchAuthTab('login')" class="text-base font-bold text-emerald-400 border-b-2 border-emerald-400 pb-1 mr-4">Log In</button>
+                <button id="auth-tab-signup" onclick="switchAuthTab('signup')" class="text-base font-bold text-slate-400 hover:text-slate-200 pb-1">Create Account</button>
+            </div>
+
+            <!-- Log In Form -->
+            <form id="form-login" onsubmit="handleLogin(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-mono text-slate-400 mb-1">Email Address</label>
+                    <input type="email" id="login-email" required placeholder="maker@electrocraft.io" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-emerald-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-mono text-slate-400 mb-1">Password</label>
+                    <input type="password" id="login-password" required placeholder="••••••••" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-emerald-500">
+                </div>
+                <button type="submit" class="w-full py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-xl text-sm transition">Log In to Account</button>
+            </form>
+
+            <!-- Sign Up Form -->
+            <form id="form-signup" onsubmit="handleSignup(event)" class="space-y-4 hidden">
+                <div>
+                    <label class="block text-xs font-mono text-slate-400 mb-1">Full Name / Maker Handle</label>
+                    <input type="text" id="signup-name" required placeholder="Ada Lovelace" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-cyan-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-mono text-slate-400 mb-1">Email Address</label>
+                    <input type="email" id="signup-email" required placeholder="maker@electrocraft.io" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-cyan-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-mono text-slate-400 mb-1">Password</label>
+                    <input type="password" id="signup-password" required placeholder="••••••••" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-cyan-500">
+                </div>
+                <button type="submit" class="w-full py-2.5 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold rounded-xl text-sm transition">Create Free Account</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: API Key Config -->
+    <div id="modal-api-key" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 space-y-4 relative shadow-2xl">
+            <button onclick="toggleApiKeyModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white">&times;</button>
+
+            <div class="space-y-1">
+                <h3 class="text-lg font-bold text-white flex items-center space-x-2">
+                    <i data-lucide="key" class="w-5 h-5 text-cyan-400"></i>
+                    <span>Configure Gemini API Key</span>
+                </h3>
+                <p class="text-xs text-slate-400">Save your API key locally to enable custom live code synthesis and hardware upgrades via Gemini AI models.</p>
+            </div>
+
+            <div class="space-y-2">
+                <label for="input-api-key" class="block text-xs font-mono text-slate-300">Gemini API Key</label>
+                <input type="password" id="input-api-key" placeholder="AIzaSy..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-100 font-mono focus:outline-none focus:border-cyan-500">
+            </div>
+
+            <div class="flex items-center space-x-2">
+                <button onclick="saveApiKey()" class="flex-1 py-2 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs rounded-xl transition">Save Key</button>
+                <button onclick="clearApiKey()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-red-400 font-bold text-xs rounded-xl transition">Clear</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+        <!-- ================= SECTION 1: PROJECT CATALOG ================= -->
+        <section id="section-catalog" class="space-y-6">
+            <!-- Hero Banner -->
+            <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 via-slate-900 to-slate-800 border border-slate-800 p-6 sm:p-8">
+                <div class="absolute -right-10 -bottom-10 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
+                <div class="absolute -left-10 -top-10 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+                <div class="max-w-2xl relative z-10 space-y-3">
+                    <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-cyan-950/80 border border-cyan-800/50 text-cyan-400 text-xs font-mono">
+                        <i data-lucide="zap" class="w-3.5 h-3.5"></i>
+                        <span>Schematics + BOM + Automated Refinement</span>
+                    </div>
+                    <h1 class="text-2xl sm:text-4xl font-extrabold tracking-tight text-white">
+                        Build Smarter Circuits. <br>
+                        <span class="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">Iterate Code On-The-Fly.</span>
+                    </h1>
+                    <p class="text-slate-400 text-sm sm:text-base leading-relaxed">
+                        Explore verified DIY hardware blueprints, calculate complete component costs, view accurate pinout wiring diagrams, and dynamically upgrade microcontroller code.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Filters & Search -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 bg-slate-900/60 p-4 rounded-xl border border-slate-800">
+                <!-- Search input -->
+                <div class="md:col-span-1 relative">
+                    <i data-lucide="search" class="w-4 h-4 absolute left-3 top-3 text-slate-400"></i>
+                    <input type="text" id="catalog-search" placeholder="Search project or part..." oninput="filterProjects()"
+                        class="w-full pl-9 pr-4 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition">
+                </div>
+
+                <!-- Board Select -->
+                <div>
+                    <select id="filter-board" onchange="filterProjects()" class="w-full py-2 px-3 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-300 focus:outline-none focus:border-emerald-500">
+                        <option value="ALL">All Boards (Arduino, ESP32, Pi)</option>
+                        <option value="Arduino Uno">Arduino Uno</option>
+                        <option value="ESP32">ESP32 Wi-Fi / BT</option>
+                        <option value="Raspberry Pi Pico">Raspberry Pi Pico</option>
+                        <option value="555 Timer">555 Timer Circuit</option>
+                    </select>
+                </div>
+
+                <!-- Category Select -->
+                <div>
+                    <select id="filter-category" onchange="filterProjects()" class="w-full py-2 px-3 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-300 focus:outline-none focus:border-emerald-500">
+                        <option value="ALL">All Categories</option>
+                        <option value="IoT & Sensors">IoT & Sensors</option>
+                        <option value="Robotics">Robotics</option>
+                        <option value="Smart Home">Smart Home</option>
+                        <option value="Audio & Displays">Audio & Displays</option>
+                    </select>
+                </div>
+
+                <!-- Difficulty Select -->
+                <div>
+                    <select id="filter-difficulty" onchange="filterProjects()" class="w-full py-2 px-3 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-300 focus:outline-none focus:border-emerald-500">
+                        <option value="ALL">All Skill Levels</option>
+                        <option value="Beginner">Beginner</option>
+                        <option value="Intermediate">Intermediate</option>
+                        <option value="Advanced">Advanced</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Project Cards Grid -->
+            <div id="projects-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Dynamically populated via JS -->
+            </div>
+        </section>
+
+
+        <!-- ================= SECTION 2: PROJECT DETAIL VIEW ================= -->
+        <section id="section-detail" class="hidden space-y-6">
+            <!-- Back button & actions -->
+            <div class="flex items-center justify-between">
+                <button onclick="switchTab('catalog')" class="flex items-center space-x-2 text-sm text-slate-400 hover:text-emerald-400 transition font-medium">
+                    <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                    <span>Back to Projects</span>
+                </button>
+                <div class="flex items-center space-x-2">
+                    <button onclick="exportProjectJSON()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-mono rounded-lg border border-slate-700 flex items-center space-x-1.5 transition">
+                        <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                        <span>Export Specs</span>
+                    </button>
+                    <button onclick="switchTab('ai-generator')" class="px-3 py-1.5 bg-gradient-to-r from-emerald-500 to-cyan-500 text-slate-950 text-xs font-bold rounded-lg flex items-center space-x-1.5 shadow-md hover:brightness-110 transition">
+                        <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+                        <span>Iterate / Add Features</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Project Meta Header -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 relative overflow-hidden">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div class="space-y-2">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <span id="detail-board-badge" class="px-2.5 py-0.5 rounded-md text-xs font-mono bg-cyan-950 text-cyan-400 border border-cyan-800">Arduino Uno</span>
+                            <span id="detail-category-badge" class="px-2.5 py-0.5 rounded-md text-xs font-medium bg-slate-800 text-slate-300">Sensors</span>
+                            <span id="detail-difficulty-badge" class="px-2.5 py-0.5 rounded-md text-xs font-medium bg-emerald-950 text-emerald-400 border border-emerald-800">Beginner</span>
+                        </div>
+                        <h2 id="detail-title" class="text-2xl sm:text-3xl font-extrabold text-white">Project Title</h2>
+                        <p id="detail-description" class="text-slate-400 text-sm max-w-3xl">Comprehensive detailed description about the project purpose.</p>
+                    </div>
+
+                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 flex items-center justify-around md:justify-start gap-6 min-w-[240px]">
+                        <div>
+                            <span class="block text-xs text-slate-500 uppercase font-mono">Est. Time</span>
+                            <span id="detail-time" class="text-lg font-bold text-slate-200">45 Mins</span>
+                        </div>
+                        <div class="w-px h-8 bg-slate-800"></div>
+                        <div>
+                            <span class="block text-xs text-slate-500 uppercase font-mono">Est. Cost</span>
+                            <span id="detail-total-cost" class="text-lg font-bold text-emerald-400">$18.50</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Interactive Columns -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+                <!-- Left Column: Bill of Materials & Wiring Visualizer (7 Cols) -->
+                <div class="lg:col-span-7 space-y-6">
+
+                    <!-- Interactive Wiring Visualizer Canvas/SVG -->
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-base font-bold text-white flex items-center space-x-2">
+                                <i data-lucide="git-commit" class="w-4 h-4 text-emerald-400"></i>
+                                <span>Interactive Wiring Diagram</span>
+                            </h3>
+                            <span class="text-xs text-slate-400 font-mono">Pinouts & Cables</span>
+                        </div>
+
+                        <!-- Circuit Render Container -->
+                        <div id="wiring-canvas-wrapper" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 min-h-[320px] flex items-center justify-center overflow-x-auto relative">
+                            <!-- Dynamic Circuit SVG inserted here -->
+                        </div>
+
+                        <div class="flex flex-wrap items-center justify-between text-xs text-slate-400 gap-2 bg-slate-950/50 p-3 rounded-lg border border-slate-800/80">
+                            <div class="flex items-center space-x-4">
+                                <span class="flex items-center space-x-1.5">
+                                    <span class="w-3 h-1 rounded bg-red-500 inline-block"></span>
+                                    <span>VCC / 5V / 3.3V</span>
+                                </span>
+                                <span class="flex items-center space-x-1.5">
+                                    <span class="w-3 h-1 rounded bg-slate-400 inline-block"></span>
+                                    <span>GND</span>
+                                </span>
+                                <span class="flex items-center space-x-1.5">
+                                    <span class="w-3 h-1 rounded bg-emerald-400 inline-block"></span>
+                                    <span>Data/Signal</span>
+                                </span>
+                            </div>
+                            <span class="text-slate-500">Hover components for details</span>
+                        </div>
+                    </div>
+
+                    <!-- Bill of Materials (BOM) Table -->
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h3 class="text-base font-bold text-white flex items-center space-x-2">
+                                    <i data-lucide="shopping-bag" class="w-4 h-4 text-cyan-400"></i>
+                                    <span>Bill of Materials & Cost Estimator</span>
+                                </h3>
+                                <p class="text-xs text-slate-400">Toggle component quantities or optional add-ons to recalculate.</p>
+                            </div>
+                            <button onclick="resetBOM()" class="text-xs text-emerald-400 hover:underline">Reset Defaults</button>
+                        </div>
+
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm text-slate-300">
+                                <thead class="text-xs uppercase bg-slate-950 text-slate-400 font-mono border-b border-slate-800">
+                                    <tr>
+                                        <th class="py-2.5 px-3">Component</th>
+                                        <th class="py-2.5 px-3">Type</th>
+                                        <th class="py-2.5 px-3 text-center">Qty</th>
+                                        <th class="py-2.5 px-3 text-right">Unit Price</th>
+                                        <th class="py-2.5 px-3 text-right">Subtotal</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="bom-table-body" class="divide-y divide-slate-800/60">
+                                    <!-- Dynamic BOM rows -->
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="flex items-center justify-between pt-2 border-t border-slate-800 text-sm">
+                            <span class="font-medium text-slate-400">Total Estimated Build Cost:</span>
+                            <span id="bom-calculated-total" class="font-bold text-emerald-400 text-lg">$0.00</span>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Right Column: Microcontroller Code Viewer & Step-by-Step (5 Cols) -->
+                <div class="lg:col-span-5 space-y-6">
+
+                    <!-- Code Viewer Panel -->
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3 flex flex-col h-full">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-2">
+                                <i data-lucide="code" class="w-4 h-4 text-emerald-400"></i>
+                                <h3 class="text-base font-bold text-white">Source Firmware Code</h3>
+                            </div>
+                            <span id="code-language-badge" class="text-xs font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-400">C++ / Arduino</span>
+                        </div>
+
+                        <!-- Code Box Header Bar -->
+                        <div class="flex items-center justify-between bg-slate-950 px-4 py-2 rounded-t-xl border border-slate-800 text-xs">
+                            <span id="code-filename" class="font-mono text-slate-400">main_firmware.ino</span>
+                            <button onclick="copyCurrentCode()" class="flex items-center space-x-1 text-emerald-400 hover:text-emerald-300 transition">
+                                <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                                <span>Copy Code</span>
+                            </button>
+                        </div>
+
+                        <!-- Syntax Block -->
+                        <div class="relative flex-1">
+                            <pre class="bg-slate-950 p-4 rounded-b-xl border-x border-b border-slate-800 font-mono text-xs text-slate-200 overflow-x-auto max-h-[460px] leading-relaxed"><code id="code-block-content">// Code loading...</code></pre>
+                        </div>
+
+                        <!-- Step Instructions -->
+                        <div class="pt-2">
+                            <h4 class="text-xs uppercase font-mono font-bold text-slate-400 mb-2">Assembly & Upload Steps</h4>
+                            <ol id="detail-assembly-steps" class="space-y-2 text-xs text-slate-300 list-decimal list-inside">
+                                <!-- Steps dynamically loaded -->
+                            </ol>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+        </section>
+
+
+        <!-- ================= SECTION 3: CODE MODIFIER & AI ITERATOR ================= -->
+        <section id="section-ai-generator" class="hidden space-y-6">
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6">
+                <!-- Header -->
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-5">
+                    <div>
+                        <div class="flex items-center space-x-2 text-cyan-400 text-xs font-mono font-bold mb-1">
+                            <i data-lucide="sparkles" class="w-4 h-4"></i>
+                            <span>DYNAMIC CODE & HARDWARE REFINEMENT</span>
+                        </div>
+                        <h2 class="text-2xl font-bold text-white">Code & Hardware Iteration Generator</h2>
+                        <p class="text-slate-400 text-sm">Request customized firmware modifications, extra sensor integration, or Wi-Fi telemetry additions.</p>
+                    </div>
+
+                    <!-- Selected Target Project -->
+                    <div class="bg-slate-950 px-4 py-2 rounded-xl border border-slate-800 text-right">
+                        <span class="text-xs text-slate-500 block">Target Base Project</span>
+                        <span id="ai-active-project-name" class="font-bold text-emerald-400 text-sm">Ultrasonic Distance Meter</span>
+                    </div>
+                </div>
+
+                <!-- Custom Prompt & Quick Presets -->
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    <div class="lg:col-span-5 space-y-4">
+                        <label class="block text-sm font-medium text-slate-300">
+                            Select Quick Hardware Upgrades
+                        </label>
+
+                        <!-- Preset Buttons -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                            <button onclick="applyPresetUpgrade('Add 16x2 I2C LCD Display')" class="p-3 bg-slate-950 hover:bg-slate-800 border border-slate-800 hover:border-emerald-500/50 rounded-xl text-left transition group">
+                                <span class="block text-xs font-bold text-slate-200 group-hover:text-emerald-400 flex items-center justify-between">
+                                    + LCD Display
+                                    <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                                </span>
+                                <span class="text-[11px] text-slate-500">Adds I2C LCD readout code & pinout</span>
+                            </button>
+
+                            <button onclick="applyPresetUpgrade('Add Wi-Fi Telemetry & Web Dashboard')" class="p-3 bg-slate-950 hover:bg-slate-800 border border-slate-800 hover:border-cyan-500/50 rounded-xl text-left transition group">
+                                <span class="block text-xs font-bold text-slate-200 group-hover:text-cyan-400 flex items-center justify-between">
+                                    + Wi-Fi / Blynk
+                                    <i data-lucide="wifi" class="w-3.5 h-3.5"></i>
+                                </span>
+                                <span class="text-[11px] text-slate-500">Upgrades code for ESP32 cloud sync</span>
+                            </button>
+
+                            <button onclick="applyPresetUpgrade('Add Piezo Audio Alarm Trigger')" class="p-3 bg-slate-950 hover:bg-slate-800 border border-slate-800 hover:border-amber-500/50 rounded-xl text-left transition group">
+                                <span class="block text-xs font-bold text-slate-200 group-hover:text-amber-400 flex items-center justify-between">
+                                    + Buzzer Alert
+                                    <i data-lucide="bell" class="w-3.5 h-3.5"></i>
+                                </span>
+                                <span class="text-[11px] text-slate-500">Triggers audio frequency output</span>
+                            </button>
+
+                            <button onclick="applyPresetUpgrade('Convert to Low-Power Deep Sleep Mode')" class="p-3 bg-slate-950 hover:bg-slate-800 border border-slate-800 hover:border-purple-500/50 rounded-xl text-left transition group">
+                                <span class="block text-xs font-bold text-slate-200 group-hover:text-purple-400 flex items-center justify-between">
+                                    + Battery Saver
+                                    <i data-lucide="battery-charging" class="w-3.5 h-3.5"></i>
+                                </span>
+                                <span class="text-[11px] text-slate-500">Optimizes code for battery longevity</span>
+                            </button>
+                        </div>
+
+                        <!-- Text Prompt Field -->
+                        <div class="space-y-2 pt-2">
+                            <label for="ai-custom-prompt" class="block text-sm font-medium text-slate-300">Or Describe Custom Feature Request</label>
+                            <textarea id="ai-custom-prompt" rows="4" placeholder="e.g. Add a button interrupts system, lower sampling rate to 200ms, and print values in Fahrenheit..."
+                                class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-cyan-500 transition"></textarea>
+                        </div>
+
+                        <button onclick="generateCustomizedCode()" class="w-full py-3 bg-gradient-to-r from-emerald-500 via-cyan-500 to-blue-500 text-slate-950 font-bold rounded-xl shadow-lg shadow-cyan-500/20 hover:brightness-110 transition flex items-center justify-center space-x-2">
+                            <i data-lucide="sparkles" class="w-4 h-4"></i>
+                            <span>Generate Upgraded Firmware & Blueprint</span>
+                        </button>
+                    </div>
+
+                    <!-- AI Generated Result Window -->
+                    <div class="lg:col-span-7 space-y-4">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-sm font-bold text-white flex items-center space-x-2">
+                                <i data-lucide="terminal" class="w-4 h-4 text-cyan-400"></i>
+                                <span>Refined Code & Schematic Guidance</span>
+                            </h3>
+                            <span id="ai-status-indicator" class="text-xs font-mono text-slate-500">Ready</span>
+                        </div>
+
+                        <!-- Generated Output Block -->
+                        <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-4 min-h-[380px]">
+                            <!-- Schematic Modifications -->
+                            <div class="bg-slate-900/70 border border-slate-800 p-3 rounded-lg text-xs space-y-1">
+                                <span class="font-bold text-cyan-400 font-mono block">REQUIRED HARDWARE MODIFICATIONS:</span>
+                                <p id="ai-schematic-notes" class="text-slate-300">Select an upgrade preset or write a custom prompt to synthesize modified schematics and firmware.</p>
+                            </div>
+
+                            <!-- Code Output -->
+                            <div class="relative">
+                                <div class="flex items-center justify-between text-xs text-slate-400 mb-1">
+                                    <span class="font-mono">customized_main.ino</span>
+                                    <button onclick="copyAICode()" class="text-cyan-400 hover:underline">Copy Code</button>
+                                </div>
+                                <pre class="bg-slate-900 p-4 rounded-xl border border-slate-800 text-xs font-mono text-emerald-300 overflow-x-auto max-h-[320px] leading-relaxed"><code id="ai-code-output">// Upgraded firmware code will appear here...</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ================= SECTION 4: CIRCUIT SANDBOX / DRAFTER ================= -->
+        <section id="section-sandbox" class="hidden space-y-6">
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6">
+                <!-- Sandbox Header -->
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+                    <div>
+                        <h2 class="text-2xl font-bold text-white flex items-center space-x-2">
+                            <i data-lucide="wrench" class="w-6 h-6 text-emerald-400"></i>
+                            <span>Interactive Circuit Sandbox Drafter</span>
+                        </h2>
+                        <p class="text-slate-400 text-sm">Pick components from the palette to auto-generate a parts list, total cost, wiring guide, and starter code.</p>
+                    </div>
+
+                    <button onclick="clearSandbox()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-red-400 text-xs font-mono rounded-lg border border-slate-700 flex items-center space-x-1">
+                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                        <span>Reset Canvas</span>
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    <!-- Palette Column (4 cols) -->
+                    <div class="lg:col-span-4 space-y-4">
+                        <h3 class="text-xs uppercase font-mono font-bold text-slate-400">Available Components Palette</h3>
+                        <div id="sandbox-palette" class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            <!-- Populated via JavaScript -->
+                        </div>
+                    </div>
+
+                    <!-- Sandbox Active Workbench & Auto Output (8 cols) -->
+                    <div class="lg:col-span-8 space-y-6">
+                        <!-- Active Workbench Card -->
+                        <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-4">
+                            <div class="flex items-center justify-between">
+                                <h3 class="text-sm font-bold text-slate-200">Selected Workbench Components</h3>
+                                <span id="sandbox-count-tag" class="text-xs font-mono text-emerald-400">1 Component</span>
+                            </div>
+
+                            <div id="sandbox-selected-list" class="flex flex-wrap gap-2 min-h-[60px] p-3 bg-slate-900 rounded-lg border border-slate-800 items-center">
+                                <!-- Dynamic Selected Chips -->
+                            </div>
+
+                            <div class="flex items-center justify-between text-sm pt-2">
+                                <span class="text-slate-400">Estimated Workbench Cost:</span>
+                                <span id="sandbox-total-price" class="font-bold text-emerald-400 text-base">$4.00</span>
+                            </div>
+                        </div>
+
+                        <!-- Auto Generated Code & Wiring Spec -->
+                        <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-4">
+                            <div class="flex items-center justify-between">
+                                <h3 class="text-sm font-bold text-white flex items-center space-x-2">
+                                    <i data-lucide="file-code" class="w-4 h-4 text-cyan-400"></i>
+                                    <span>Synthesized Starter Code</span>
+                                </h3>
+                                <button onclick="copySandboxCode()" class="text-xs text-cyan-400 hover:underline">Copy Code</button>
+                            </div>
+
+                            <pre class="bg-slate-900 p-4 rounded-xl border border-slate-800 font-mono text-xs text-cyan-300 overflow-x-auto max-h-[260px]"><code id="sandbox-code-preview">// Select components to auto-generate code...</code></pre>
+
+                            <!-- Automated Connection Guidance -->
+                            <div class="space-y-2">
+                                <h4 class="text-xs font-mono font-bold text-slate-400 uppercase">Recommended Wire Connections</h4>
+                                <div id="sandbox-wiring-guide" class="space-y-1 text-xs font-mono text-slate-300">
+                                    <!-- Auto pin connections list -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 pointer-events-none space-y-2"></div>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        /* ==========================================================================
+           1. APPLICATION STATE & DATA STORES
+           ========================================================================== */
+
+        let currentUser = JSON.parse(localStorage.getItem('electrocraft_user')) || null;
+        let geminiApiKey = localStorage.getItem('electrocraft_api_key') || '';
+        let currentSelectedProject = null;
+        let currentBOMQuantities = {};
+
+        const PROJECTS_DATA = [
+            {
+                id: "ultrasonic-meter",
+                title: "Ultrasonic Distance Meter",
+                board: "Arduino Uno",
+                category: "IoT & Sensors",
+                difficulty: "Beginner",
+                estimatedTime: "30 Mins",
+                description: "Measure distances accurately using HC-SR04 sonar soundwaves and display values over Serial Monitor or LEDs.",
+                bom: [
+                    { id: "b1", name: "Arduino Uno R3", type: "Microcontroller", qty: 1, price: 12.00 },
+                    { id: "b2", name: "HC-SR04 Ultrasonic Sensor", type: "Sensor", qty: 1, price: 3.50 },
+                    { id: "b3", name: "Breadboard & Jumpers", type: "Wiring", qty: 1, price: 3.00 },
+                    { id: "b4", name: "Piezo Buzzer Alarm", type: "Audio Output", qty: 1, price: 1.50 }
+                ],
+                steps: [
+                    "Connect HC-SR04 VCC to Arduino 5V pin and GND to GND.",
+                    "Attach Sensor Trig pin to Digital Pin 9, and Echo pin to Digital Pin 8.",
+                    "Connect USB cable to your PC and launch the Arduino IDE.",
+                    "Upload the C++ sketch and open Serial Monitor at 9600 baud."
+                ],
+                code: `// ElectroCraft: Ultrasonic Distance Meter
+const int TRIG_PIN = 9;
+const int ECHO_PIN = 8;
+
+void setup() {
+  Serial.begin(9600);
+  pinMode(TRIG_PIN, OUTPUT);
+  pinMode(ECHO_PIN, INPUT);
+}
+
+void loop() {
+  digitalWrite(TRIG_PIN, LOW);
+  delayMicroseconds(2);
+  digitalWrite(TRIG_PIN, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(TRIG_PIN, LOW);
+
+  long duration = pulseIn(ECHO_PIN, HIGH);
+  float distanceCm = duration * 0.034 / 2;
+
+  Serial.print("Distance: ");
+  Serial.print(distanceCm);
+  Serial.println(" cm");
+
+  delay(250);
+}`
+            },
+            {
+                id: "smart-plant-watering",
+                title: "Automated Plant Watering System",
+                board: "ESP32",
+                category: "Smart Home",
+                difficulty: "Intermediate",
+                estimatedTime: "60 Mins",
+                description: "Monitors soil moisture levels and triggers a mini 5V water pump relay automatically when soil gets dry.",
+                bom: [
+                    { id: "s1", name: "ESP32 Development Board", type: "Microcontroller", qty: 1, price: 8.50 },
+                    { id: "s2", name: "Capacitive Soil Moisture Sensor", type: "Sensor", qty: 1, price: 2.50 },
+                    { id: "s3", name: "5V Single Channel Relay Module", type: "Actuator", qty: 1, price: 2.00 },
+                    { id: "s4", name: "Mini Submersible 5V Pump", type: "Motor", qty: 1, price: 4.50 }
+                ],
+                steps: [
+                    "Connect Soil Sensor Signal to ESP32 Analog Pin GPIO34.",
+                    "Wire Relay control pin to ESP32 GPIO26.",
+                    "Connect pump power supply in series through Relay Normally Open terminal.",
+                    "Flash ESP32 with moisture threshold parameters."
+                ],
+                code: `// ElectroCraft: Smart Soil Moisture Pump Control
+const int SOIL_PIN = 34;
+const int RELAY_PIN = 26;
+const int DRY_THRESHOLD = 2400;
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(RELAY_PIN, OUTPUT);
+  digitalWrite(RELAY_PIN, LOW);
+}
+
+void loop() {
+  int rawValue = analogRead(SOIL_PIN);
+  Serial.print("Soil Moisture: ");
+  Serial.println(rawValue);
+
+  if(rawValue > DRY_THRESHOLD) {
+    digitalWrite(RELAY_PIN, HIGH);
+    delay(3000);
+    digitalWrite(RELAY_PIN, LOW);
+  }
+  delay(10000);
+}`
+            },
+            {
+                id: "rgb-mood-bluetooth",
+                title: "Bluetooth RGB LED Mood Lamp",
+                board: "Arduino Uno",
+                category: "Audio & Displays",
+                difficulty: "Beginner",
+                estimatedTime: "45 Mins",
+                description: "Wireless smartphone color control for an RGB LED module via HC-05 serial Bluetooth commands.",
+                bom: [
+                    { id: "r1", name: "Arduino Uno R3", type: "Microcontroller", qty: 1, price: 12.00 },
+                    { id: "r2", name: "HC-05 Bluetooth Module", type: "Wireless", qty: 1, price: 5.00 },
+                    { id: "r3", name: "Common Cathode RGB LED", type: "Light Output", qty: 1, price: 1.00 },
+                    { id: "r4", name: "220 Ohm Resistors", type: "Passive", qty: 3, price: 0.50 }
+                ],
+                steps: [
+                    "Wire HC-05 TX to Arduino RX (Pin 10 SoftSerial) and RX to TX (Pin 11).",
+                    "Connect RGB Red, Green, Blue pins to PWM Pins 3, 5, 6 via 220 ohm resistors.",
+                    "Pair HC-05 with mobile phone Bluetooth Terminal App."
+                ],
+                code: `// ElectroCraft: HC-05 Bluetooth RGB Control
+#include <SoftwareSerial.h>
+SoftwareSerial BTSerial(10, 11);
+
+const int RED_PIN = 3;
+const int GREEN_PIN = 5;
+const int BLUE_PIN = 6;
+
+void setup() {
+  BTSerial.begin(9600);
+  pinMode(RED_PIN, OUTPUT);
+  pinMode(GREEN_PIN, OUTPUT);
+  pinMode(BLUE_PIN, OUTPUT);
+}
+
+void loop() {
+  if (BTSerial.available() > 0) {
+    char cmd = BTSerial.read();
+    if(cmd == 'R') analogWrite(RED_PIN, 255);
+    if(cmd == 'G') analogWrite(GREEN_PIN, 255);
+    if(cmd == 'B') analogWrite(BLUE_PIN, 255);
+  }
+}`
+            },
+            {
+                id: "obstacle-robot",
+                title: "Mini Obstacle Avoiding Robot",
+                board: "Arduino Uno",
+                category: "Robotics",
+                difficulty: "Advanced",
+                estimatedTime: "120 Mins",
+                description: "Autonomous dual-motor rover that scans surroundings using a servo-mounted ultrasonic sensor to avoid walls.",
+                bom: [
+                    { id: "o1", name: "Arduino Uno R3", type: "Microcontroller", qty: 1, price: 12.00 },
+                    { id: "o2", name: "L298N Motor Driver", type: "Actuator", qty: 1, price: 4.50 },
+                    { id: "o3", name: "Dual TT DC Gear Motors", type: "Motor", qty: 2, price: 5.00 },
+                    { id: "o4", name: "SG90 Micro Servo", type: "Motor", qty: 1, price: 2.50 }
+                ],
+                steps: [
+                    "Mount DC Motors to chassis and wire to L298N OUT1-OUT4.",
+                    "Connect L298N IN1-IN4 to Arduino pins 2, 3, 4, 5.",
+                    "Mount SG90 Servo on front and attach HC-SR04 sonar sensor."
+                ],
+                code: `// ElectroCraft: Obstacle Robot Chassis Code
+#include <Servo.h>
+Servo scannerServo;
+const int IN1 = 2; const int IN2 = 3;
+
+void setup() {
+  pinMode(IN1, OUTPUT); pinMode(IN2, OUTPUT);
+  scannerServo.attach(10);
+  scannerServo.write(90);
+}
+
+void loop() {
+  digitalWrite(IN1, HIGH);
+  digitalWrite(IN2, LOW);
+  delay(100);
+}`
+            }
+        ];
+
+        const PALETTE_COMPONENTS = [
+            { id: "arduino", name: "Arduino Uno", price: 12.00, type: "Board", pin: "5V, GND, D2-D13" },
+            { id: "esp32", name: "ESP32 Board", price: 8.50, type: "Board", pin: "3.3V, GND, GPIO" },
+            { id: "led", name: "Standard LED", price: 0.20, type: "Output", pin: "Digital Pin -> 220Ω" },
+            { id: "resistor", name: "220Ω Resistor", price: 0.10, type: "Passive", pin: "In Series" },
+            { id: "ultrasonic", name: "HC-SR04 Sonar", price: 3.50, type: "Sensor", pin: "Trig(D9), Echo(D8)" },
+            { id: "pir", name: "PIR Motion Sensor", price: 2.80, type: "Sensor", pin: "Signal -> D2" },
+            { id: "servo", name: "SG90 Micro Servo", price: 2.50, type: "Motor", pin: "PWM Pin 9" },
+            { id: "buzzer", name: "Piezo Buzzer", price: 1.20, type: "Audio", pin: "PWM Pin 11" },
+            { id: "lcd", name: "16x2 I2C LCD", price: 4.50, type: "Display", pin: "SDA(A4), SCL(A5)" }
+        ];
+
+        let sandboxSelected = [PALETTE_COMPONENTS[0], PALETTE_COMPONENTS[2]];
+
+        /* ==========================================================================
+           2. AUTHENTICATION & API KEY MANAGEMENT
+           ========================================================================== */
+
+        function initUserSession() {
+            updateAuthUI();
+            updateApiKeyUI();
+        }
+
+        function toggleAuthModal(defaultTab = 'login') {
+            const modal = document.getElementById('modal-auth');
+            modal.classList.toggle('hidden');
+            if (!modal.classList.contains('hidden')) {
+                switchAuthTab(defaultTab);
+            }
+        }
+
+        function switchAuthTab(tab) {
+            const loginForm = document.getElementById('form-login');
+            const signupForm = document.getElementById('form-signup');
+            const tabLogin = document.getElementById('auth-tab-login');
+            const tabSignup = document.getElementById('auth-tab-signup');
+
+            if (tab === 'login') {
+                loginForm.classList.remove('hidden');
+                signupForm.classList.add('hidden');
+                tabLogin.className = "text-base font-bold text-emerald-400 border-b-2 border-emerald-400 pb-1 mr-4";
+                tabSignup.className = "text-base font-bold text-slate-400 hover:text-slate-200 pb-1";
+            } else {
+                loginForm.classList.add('hidden');
+                signupForm.classList.remove('hidden');
+                tabSignup.className = "text-base font-bold text-cyan-400 border-b-2 border-cyan-400 pb-1";
+                tabLogin.className = "text-base font-bold text-slate-400 hover:text-slate-200 pb-1 mr-4";
+            }
+        }
+
+        function handleLogin(e) {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value;
+            currentUser = {
+                name: email.split('@')[0],
+                email: email
+            };
+            localStorage.setItem('electrocraft_user', JSON.stringify(currentUser));
+            updateAuthUI();
+            toggleAuthModal();
+            showToast(`Welcome back, ${currentUser.name}!`);
+        }
+
+        function handleSignup(e) {
+            e.preventDefault();
+            const name = document.getElementById('signup-name').value;
+            const email = document.getElementById('signup-email').value;
+            currentUser = { name, email };
+            localStorage.setItem('electrocraft_user', JSON.stringify(currentUser));
+            updateAuthUI();
+            toggleAuthModal();
+            showToast(`Account created! Welcome, ${name}.`);
+        }
+
+        function handleLogout() {
+            currentUser = null;
+            localStorage.removeItem('electrocraft_user');
+            updateAuthUI();
+            showToast("Logged out successfully.");
+        }
+
+        function updateAuthUI() {
+            const container = document.getElementById('auth-nav-container');
+            if (currentUser) {
+                container.innerHTML = `
+                    <div class="flex items-center space-x-2 bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                        <span class="text-xs font-mono text-slate-200">${currentUser.name}</span>
+                        <button onclick="handleLogout()" class="text-slate-500 hover:text-red-400 text-xs ml-1" title="Log Out">&times;</button>
+                    </div>
+                `;
+            } else {
+                container.innerHTML = `
+                    <button onclick="toggleAuthModal('login')" id="btn-open-auth" class="px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs transition flex items-center space-x-1.5 shadow-md shadow-emerald-500/20">
+                        <i data-lucide="user" class="w-4 h-4"></i>
+                        <span>Log In / Sign Up</span>
+                    </button>
+                `;
+            }
+            lucide.createIcons();
+        }
+
+        function toggleApiKeyModal() {
+            const modal = document.getElementById('modal-api-key');
+            modal.classList.toggle('hidden');
+            if (!modal.classList.contains('hidden')) {
+                document.getElementById('input-api-key').value = geminiApiKey;
+            }
+        }
+
+        function saveApiKey() {
+            const key = document.getElementById('input-api-key').value.trim();
+            geminiApiKey = key;
+            if (key) {
+                localStorage.setItem('electrocraft_api_key', key);
+                showToast("API Key saved securely in browser storage.");
+            } else {
+                localStorage.removeItem('electrocraft_api_key');
+                showToast("Cleared API Key. System in Demo Mode.");
+            }
+            updateApiKeyUI();
+            toggleApiKeyModal();
+        }
+
+        function clearApiKey() {
+            document.getElementById('input-api-key').value = '';
+            saveApiKey();
+        }
+
+        function updateApiKeyUI() {
+            const label = document.getElementById('api-key-label');
+            const btn = document.getElementById('btn-api-key-status');
+            if (geminiApiKey) {
+                label.innerText = "API Key: Configured";
+                btn.className = "px-2.5 py-1.5 rounded-lg bg-cyan-950/80 text-cyan-400 border border-cyan-800 text-xs font-mono flex items-center space-x-1.5 transition";
+            } else {
+                label.innerText = "API Key: Demo";
+                btn.className = "px-2.5 py-1.5 rounded-lg bg-slate-800 text-slate-300 hover:text-cyan-400 text-xs font-mono border border-slate-700 flex items-center space-x-1.5 transition";
+            }
+        }
+
+        /* ==========================================================================
+           3. TAB NAVIGATION & UI CONTROLLERS
+           ========================================================================== */
+
+        function switchTab(tabName) {
+            document.getElementById('section-catalog').classList.add('hidden');
+            document.getElementById('section-detail').classList.add('hidden');
+            document.getElementById('section-ai-generator').classList.add('hidden');
+            document.getElementById('section-sandbox').classList.add('hidden');
+
+            document.getElementById('nav-catalog').className = "px-3 py-2 rounded-lg text-sm font-medium transition flex items-center space-x-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800";
+            document.getElementById('nav-sandbox').className = "px-3 py-2 rounded-lg text-sm font-medium transition flex items-center space-x-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800";
+            document.getElementById('nav-ai').className = "px-3 py-2 rounded-lg text-sm font-medium transition flex items-center space-x-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800";
+
+            if (tabName === 'catalog') {
+                document.getElementById('section-catalog').classList.remove('hidden');
+                document.getElementById('nav-catalog').className = "px-3 py-2 rounded-lg text-sm font-medium transition flex items-center space-x-2 bg-slate-800 text-emerald-400 border border-emerald-500/30";
+            } else if (tabName === 'detail') {
+                document.getElementById('section-detail').classList.remove('hidden');
+            } else if (tabName === 'sandbox') {
+                document.getElementById('section-sandbox').classList.remove('hidden');
+                document.getElementById('nav-sandbox').className = "px-3 py-2 rounded-lg text-sm font-medium transition flex items-center space-x-2 bg-slate-800 text-emerald-400 border border-emerald-500/30";
+                renderSandboxPalette();
+            } else if (tabName === 'ai-generator') {
+                document.getElementById('section-ai-generator').classList.remove('hidden');
+                document.getElementById('nav-ai').className = "px-3 py-2 rounded-lg text-sm font-medium transition flex items-center space-x-2 bg-slate-800 text-cyan-400 border border-cyan-500/30";
+            }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        /* ==========================================================================
+           4. CATALOG & FILTER LOGIC
+           ========================================================================== */
+
+        function renderCatalog(projects) {
+            const grid = document.getElementById('projects-grid');
+            if (!projects.length) {
+                grid.innerHTML = `<div class="col-span-full py-12 text-center text-slate-500">No matching projects found.</div>`;
+                return;
+            }
+
+            grid.innerHTML = projects.map(p => `
+                <div onclick="openProjectDetail('${p.id}')" class="bg-slate-900 border border-slate-800 hover:border-emerald-500/50 rounded-2xl p-5 space-y-4 cursor-pointer transition group">
+                    <div class="flex items-center justify-between">
+                        <span class="px-2.5 py-1 rounded-md text-xs font-mono bg-cyan-950 text-cyan-400 border border-cyan-800/60">${p.board}</span>
+                        <span class="text-xs font-medium text-emerald-400 bg-emerald-950/60 px-2.5 py-0.5 rounded-full border border-emerald-800/40">${p.difficulty}</span>
+                    </div>
+                    <div class="space-y-1">
+                        <h3 class="text-lg font-bold text-white group-hover:text-emerald-400 transition">${p.title}</h3>
+                        <p class="text-xs text-slate-400 line-clamp-2">${p.description}</p>
+                    </div>
+                    <div class="flex items-center justify-between pt-2 border-t border-slate-800 text-xs text-slate-400">
+                        <span class="flex items-center space-x-1"><i data-lucide="clock" class="w-3.5 h-3.5"></i><span>${p.estimatedTime}</span></span>
+                        <span class="font-bold text-emerald-400">View Blueprint &rarr;</span>
+                    </div>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        function filterProjects() {
+            const query = document.getElementById('catalog-search').value.toLowerCase();
+            const board = document.getElementById('filter-board').value;
+            const category = document.getElementById('filter-category').value;
+            const difficulty = document.getElementById('filter-difficulty').value;
+
+            const filtered = PROJECTS_DATA.filter(p => {
+                const matchesQuery = p.title.toLowerCase().includes(query) || p.description.toLowerCase().includes(query);
+                const matchesBoard = board === 'ALL' || p.board === board;
+                const matchesCat = category === 'ALL' || p.category === category;
+                const matchesDiff = difficulty === 'ALL' || p.difficulty === difficulty;
+                return matchesQuery && matchesBoard && matchesCat && matchesDiff;
+            });
+            renderCatalog(filtered);
+        }
+
+        /* ==========================================================================
+           5. PROJECT DETAIL & BOM CALCULATOR
+           ========================================================================== */
+
+        function openProjectDetail(projectId) {
+            currentSelectedProject = PROJECTS_DATA.find(p => p.id === projectId);
+            if (!currentSelectedProject) return;
+
+            // Populate metadata
+            document.getElementById('detail-title').innerText = currentSelectedProject.title;
+            document.getElementById('detail-description').innerText = currentSelectedProject.description;
+            document.getElementById('detail-board-badge').innerText = currentSelectedProject.board;
+            document.getElementById('detail-category-badge').innerText = currentSelectedProject.category;
+            document.getElementById('detail-difficulty-badge').innerText = currentSelectedProject.difficulty;
+            document.getElementById('detail-time').innerText = currentSelectedProject.estimatedTime;
+            document.getElementById('ai-active-project-name').innerText = currentSelectedProject.title;
+
+            // Initialize BOM quantities
+            currentBOMQuantities = {};
+            currentSelectedProject.bom.forEach(item => {
+                currentBOMQuantities[item.id] = item.qty;
+            });
+
+            renderBOMTable();
+            renderWiringVisualizer();
+
+            // Populate Code & Steps
+            document.getElementById('code-block-content').innerText = currentSelectedProject.code;
+            document.getElementById('detail-assembly-steps').innerHTML = currentSelectedProject.steps.map(s => `<li>${s}</li>`).join('');
+
+            switchTab('detail');
+        }
+
+        function renderBOMTable() {
+            const tbody = document.getElementById('bom-table-body');
+            let total = 0;
+
+            tbody.innerHTML = currentSelectedProject.bom.map(item => {
+                const q = currentBOMQuantities[item.id];
+                const sub = q * item.price;
+                total += sub;
+                return `
+                    <tr>
+                        <td class="py-2.5 px-3 font-medium text-white">${item.name}</td>
+                        <td class="py-2.5 px-3 text-slate-400 text-xs">${item.type}</td>
+                        <td class="py-2.5 px-3 text-center">
+                            <div class="inline-flex items-center space-x-1.5 bg-slate-950 px-2 py-0.5 rounded border border-slate-800">
+                                <button onclick="updateBOMQty('${item.id}', -1)" class="text-slate-400 hover:text-white px-1">-</button>
+                                <span class="font-mono text-emerald-400 text-xs">${q}</span>
+                                <button onclick="updateBOMQty('${item.id}', 1)" class="text-slate-400 hover:text-white px-1">+</button>
+                            </div>
+                        </td>
+                        <td class="py-2.5 px-3 text-right font-mono text-xs">$${item.price.toFixed(2)}</td>
+                        <td class="py-2.5 px-3 text-right font-mono text-xs font-bold text-emerald-400">$${sub.toFixed(2)}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            document.getElementById('detail-total-cost').innerText = `$${total.toFixed(2)}`;
+            document.getElementById('bom-calculated-total').innerText = `$${total.toFixed(2)}`;
+        }
+
+        function updateBOMQty(itemId, delta) {
+            if (currentBOMQuantities[itemId] + delta >= 0) {
+                currentBOMQuantities[itemId] += delta;
+                renderBOMTable();
+            }
+        }
+
+        function resetBOM() {
+            currentSelectedProject.bom.forEach(item => {
+                currentBOMQuantities[item.id] = item.qty;
+            });
+            renderBOMTable();
+            showToast("BOM quantities reset to defaults.");
+        }
+
+        function renderWiringVisualizer() {
+            const wrapper = document.getElementById('wiring-canvas-wrapper');
+            wrapper.innerHTML = `
+                <svg viewBox="0 0 500 200" class="w-full h-full max-h-[220px]">
+                    <!-- Breadboard Base -->
+                    <rect x="50" y="40" width="400" height="120" rx="8" fill="#1e293b" stroke="#334155" stroke-width="2"/>
+                    <!-- Microcontroller Board -->
+                    <rect x="70" y="60" width="100" height="80" rx="4" fill="#0f172a" stroke="#10b981" stroke-width="2"/>
+                    <text x="120" y="95" fill="#34d399" font-size="11" font-family="monospace" text-anchor="middle">${currentSelectedProject.board}</text>
+                    
+                    <!-- Sensor Module -->
+                    <rect x="330" y="65" width="90" height="70" rx="4" fill="#0f172a" stroke="#06b6d4" stroke-width="2"/>
+                    <text x="375" y="100" fill="#06b6d4" font-size="10" font-family="monospace" text-anchor="middle">Sensor Module</text>
+
+                    <!-- VCC Wire -->
+                    <path d="M 170 80 Q 250 20 330 80" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-dasharray="4"/>
+                    <text x="250" y="40" fill="#ef4444" font-size="9" font-family="monospace" text-anchor="middle">5V / VCC</text>
+
+                    <!-- GND Wire -->
+                    <path d="M 170 100 Q 250 170 330 100" fill="none" stroke="#94a3b8" stroke-width="2.5"/>
+                    <text x="250" y="155" fill="#94a3b8" font-size="9" font-family="monospace" text-anchor="middle">GND</text>
+
+                    <!-- Signal Wire -->
+                    <path d="M 170 120 L 330 120" fill="none" stroke="#10b981" stroke-width="2.5"/>
+                    <text x="250" y="115" fill="#10b981" font-size="9" font-family="monospace" text-anchor="middle">Data Pin</text>
+                </svg>
+            `;
+        }
+
+        /* ==========================================================================
+           6. CIRCUIT SANDBOX & DRAFTER
+           ========================================================================== */
+
+        function renderSandboxPalette() {
+            const palette = document.getElementById('sandbox-palette');
+            palette.innerHTML = PALETTE_COMPONENTS.map(c => `
+                <div onclick="addSandboxComponent('${c.id}')" class="p-2.5 bg-slate-950 hover:bg-slate-800 border border-slate-800 hover:border-emerald-500/50 rounded-xl cursor-pointer transition flex items-center justify-between">
+                    <div>
+                        <span class="block text-xs font-bold text-slate-200">${c.name}</span>
+                        <span class="text-[10px] text-slate-500">${c.type}</span>
+                    </div>
+                    <span class="text-xs font-mono text-emerald-400">+$${c.price.toFixed(2)}</span>
+                </div>
+            `).join('');
+            renderSandboxWorkbench();
+        }
+
+        function addSandboxComponent(id) {
+            const comp = PALETTE_COMPONENTS.find(c => c.id === id);
+            if (comp) {
+                sandboxSelected.push(comp);
+                renderSandboxWorkbench();
+            }
+        }
+
+        function removeSandboxComponent(index) {
+            sandboxSelected.splice(index, 1);
+            renderSandboxWorkbench();
+        }
+
+        function clearSandbox() {
+            sandboxSelected = [];
+            renderSandboxWorkbench();
+        }
+
+        function renderSandboxWorkbench() {
+            const list = document.getElementById('sandbox-selected-list');
+            const countTag = document.getElementById('sandbox-count-tag');
+            const totalPrice = document.getElementById('sandbox-total-price');
+            const codePreview = document.getElementById('sandbox-code-preview');
+            const wiringGuide = document.getElementById('sandbox-wiring-guide');
+
+            countTag.innerText = `${sandboxSelected.length} Components`;
+
+            if (!sandboxSelected.length) {
+                list.innerHTML = `<span class="text-xs text-slate-500 italic">No components selected. Pick items from the palette.</span>`;
+                totalPrice.innerText = `$0.00`;
+                codePreview.innerText = `// Add components to synthesize code`;
+                wiringGuide.innerHTML = `<span class="text-slate-500 italic">No connections generated.</span>`;
+                return;
+            }
+
+            let total = 0;
+            list.innerHTML = sandboxSelected.map((c, idx) => {
+                total += c.price;
+                return `
+                    <div class="inline-flex items-center space-x-2 bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1 text-xs text-slate-200">
+                        <span>${c.name}</span>
+                        <button onclick="removeSandboxComponent(${idx})" class="text-slate-500 hover:text-red-400">&times;</button>
+                    </div>
+                `;
+            }).join('');
+
+            totalPrice.innerText = `$${total.toFixed(2)}`;
+            codePreview.innerText = `// ElectroCraft Sandbox Auto-Generated Sketch\nvoid setup() {\n  Serial.begin(9600);\n  // Initialized ${sandboxSelected.length} components\n}\n\nvoid loop() {\n  // Run main loop\n}`;
+            
+            wiringGuide.innerHTML = sandboxSelected.map(c => `
+                <div class="flex items-center justify-between border-b border-slate-800/60 pb-1">
+                    <span class="text-slate-300">${c.name}</span>
+                    <span class="text-cyan-400 font-mono">${c.pin}</span>
+                </div>
+            `).join('');
+        }
+
+        /* ==========================================================================
+           7. AI CODE REFINEMENT & GEMINI INTEGRATION
+           ========================================================================== */
+
+        async function generateCustomizedCode() {
+            const prompt = document.getElementById('ai-custom-prompt').value.trim();
+            const statusTag = document.getElementById('ai-status-indicator');
+            const codeOutput = document.getElementById('ai-code-output');
+            const schematicNotes = document.getElementById('ai-schematic-notes');
+
+            if (!prompt) {
+                showToast("Please enter or select a feature modification request.");
+                return;
+            }
+
+            statusTag.innerText = "Synthesizing Modifications...";
+            statusTag.className = "text-xs font-mono text-cyan-400 animate-pulse";
+
+            // If API Key is configured, execute live Gemini call
+            if (geminiApiKey) {
+                try {
+                    const systemPrompt = "You are an expert embedded systems engineer. Given a C++ micro-controller sketch and hardware modifications request, output a JSON object with keys 'schematicNotes' (short instructions for physical wiring) and 'code' (full updated C++ sketch). Return valid JSON only.";
+                    const userQuery = `Base Sketch:\n${currentSelectedProject ? currentSelectedProject.code : PROJECTS_DATA[0].code}\n\nModification Request:\n${prompt}`;
+
+                    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${geminiApiKey}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents: [{ parts: [{ text: userQuery }] }],
+                            systemInstruction: { parts: [{ text: systemPrompt }] },
+                            generationConfig: { responseMimeType: "application/json" }
+                        })
+                    });
+
+                    const result = await response.json();
+                    const parsed = JSON.parse(result.candidates[0].content.parts[0].text);
+
+                    schematicNotes.innerText = parsed.schematicNotes || "Pinout modifications ready.";
+                    codeOutput.innerText = parsed.code || "// Updated code";
+                    statusTag.innerText = "Refinement Complete (Gemini API)";
+                    statusTag.className = "text-xs font-mono text-emerald-400";
+                    showToast("Custom code synthesized using configured Gemini API!");
+                    return;
+                } catch (err) {
+                    console.warn("Gemini API Error, falling back to local synthesizer:", err);
+                }
+            }
+
+            // Fallback Simulated Synthesizer
+            setTimeout(() => {
+                statusTag.innerText = "Refinement Complete (Demo Synthesizer)";
+                statusTag.className = "text-xs font-mono text-emerald-400";
+
+                const baseCode = currentSelectedProject ? currentSelectedProject.code : PROJECTS_DATA[0].code;
+                const baseTitle = currentSelectedProject ? currentSelectedProject.title : PROJECTS_DATA[0].title;
+                let upgradedCode = baseCode;
+                let wiringAdditions = "";
+
+                if (prompt.toLowerCase().includes('lcd')) {
+                    wiringAdditions = "Add LiquidCrystal_I2C display module. Connect SDA pin to SDA (A4) and SCL pin to SCL (A5). Wire VCC to 5V and GND to common Ground.";
+                    upgradedCode = `// ElectroCraft Upgraded: ${baseTitle} + LCD Display Integration\n#include <Wire.h>\n#include <LiquidCrystal_I2C.h>\n\nLiquidCrystal_I2C lcd(0x27, 16, 2);\n\n` + baseCode;
+                } else {
+                    wiringAdditions = `Configured system modifications for: "${prompt}".`;
+                    upgradedCode = `// ElectroCraft Custom Iteration: ${prompt}\n\n` + baseCode;
+                }
+
+                schematicNotes.innerText = wiringAdditions;
+                codeOutput.innerText = upgradedCode;
+                showToast("Schematic and code synthesized!");
+            }, 800);
+        }
+
+        /* ==========================================================================
+           8. UTILITY HELPERS & INITIALIZATION
+           ========================================================================== */
+
+        function applyPresetUpgrade(presetName) {
+            document.getElementById('ai-custom-prompt').value = presetName;
+            generateCustomizedCode();
+        }
+
+        function copyCurrentCode() {
+            const code = document.getElementById('code-block-content').innerText;
+            navigator.clipboard.writeText(code);
+            showToast("Code copied to clipboard!");
+        }
+
+        function copyAICode() {
+            const code = document.getElementById('ai-code-output').innerText;
+            navigator.clipboard.writeText(code);
+            showToast("Upgraded AI code copied to clipboard!");
+        }
+
+        function copySandboxCode() {
+            const code = document.getElementById('sandbox-code-preview').innerText;
+            navigator.clipboard.writeText(code);
+            showToast("Sandbox code copied to clipboard!");
+        }
+
+        function exportProjectJSON() {
+            if (!currentSelectedProject) return;
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(currentSelectedProject, null, 2));
+            const dlAnchor = document.createElement('a');
+            dlAnchor.setAttribute("href", dataStr);
+            dlAnchor.setAttribute("download", `${currentSelectedProject.id}-specs.json`);
+            document.body.appendChild(dlAnchor);
+            dlAnchor.click();
+            dlAnchor.remove();
+            showToast("Project specifications exported successfully.");
+        }
+
+        function showToast(message) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = "bg-slate-900 border border-emerald-500/50 text-slate-100 text-xs px-4 py-2.5 rounded-xl shadow-xl pointer-events-auto flex items-center space-x-2 animate-bounce";
+            toast.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400"></span><span>${message}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        /* Initialize Application on Page Load */
+        window.onload = function() {
+            initUserSession();
+            renderCatalog(PROJECTS_DATA);
+            lucide.createIcons();
+        };
+    </script>
+</body>
+                                                    </html>
